@@ -3,9 +3,7 @@
 
 using namespace std;
 
-
-int main() {
-
+DWORD WINAPI filecopy(void* data) {
 	string filenameInput, filenameOutput;
 
 	cout << "Enter name of input file: ";
@@ -14,23 +12,35 @@ int main() {
 	cin >> filenameOutput;
 
 	HANDLE inputFile, outputFile, event;
-	DWORD bytesRead;
-	LPVOID buffer = 0;
+	DWORD bytesRead = 0;
+	int filesize;
+	char buffer[1];
 
-	event = CreateEvent(NULL, FALSE, FALSE, L"event");
+	event = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	OVERLAPPED ov;
+	ZeroMemory(&ov, sizeof(OVERLAPPED));
 	ov.Offset = 0;
 	ov.OffsetHigh = 0;
 	ov.hEvent = event;
 
-	inputFile = CreateFileA(filenameInput.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
-	outputFile = CreateFileA(filenameOutput.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
+	inputFile = CreateFileA(filenameInput.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+	outputFile = CreateFileA(filenameOutput.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_FLAG_OVERLAPPED, NULL);
 
-	while (ReadFile(inputFile, &buffer, sizeof(buffer), &bytesRead, NULL) && bytesRead != 0) {
-		//WaitForSingleObject(event, INFINITE);
-		WriteFile(outputFile, &buffer, sizeof(buffer), &bytesRead, NULL);
-		
+	filesize = GetFileSize(inputFile, NULL);
+
+	for (int i = 0; i < filesize; ++i) {
+		ReadFile(inputFile, &buffer, sizeof(buffer), &bytesRead, &ov);
+		WriteFile(outputFile, &buffer, sizeof(buffer), &bytesRead, &ov);
+		ov.Offset++;
 	}
+	return 0;
+}
 
+int main() {
+
+	HANDLE thread;
+
+	thread = CreateThread(NULL, 0, filecopy, NULL, NULL, NULL);
+	WaitForSingleObject(thread, INFINITE);
 }
