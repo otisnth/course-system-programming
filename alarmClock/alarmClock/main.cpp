@@ -29,6 +29,7 @@ void main()
     DWORD dwBytesRead = 0, dwNextMessageSize = 0, dwNextMessageCount = 0;
     _int64 qwStartTimer = 10000000;
     MyParam param = { 0 };
+    int period;
 
     hMail = CreateMailslot(sMailName, sizeof(time_t), MAILSLOT_WAIT_FOREVER, NULL);
     if (hMail == INVALID_HANDLE_VALUE)
@@ -52,10 +53,12 @@ void main()
         
     }
 
-    ReadFile(hMail, &param.nTime, sizeof(time_t), &dwBytesRead, NULL);
+    ReadFile(hMail, &period, sizeof(period), &dwBytesRead, NULL);
     param.hTimer = hTimer;
+    param.nTime  = time(NULL) + period;
+    cout << "Time is set!" << endl;
 
-    SetWaitableTimer(hTimer, (LARGE_INTEGER*)&param.nTime, 1000, OnTimer, &param, FALSE);
+    SetWaitableTimer(hTimer, (LARGE_INTEGER*)&qwStartTimer, 1000, OnTimer, &param, FALSE);
     WaitForSingleObjectEx(hTimer, INFINITE, TRUE);
 
     system("pause");
